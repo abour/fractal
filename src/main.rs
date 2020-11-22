@@ -2,9 +2,6 @@ extern crate image;
 pub mod color;
 
 use rand::{thread_rng, Rng};
-use std::sync::Arc;
-use tokio::net::TcpListener;
-use tokio::prelude::*;
 use tokio::sync::mpsc;
 
 #[tokio::main]
@@ -26,7 +23,7 @@ async fn main() {
         for y in 0..height {
             let tx = tx.clone();
             tokio::spawn(async move {
-                let (mut line, line_number) =
+                let (line, line_number) =
                     render_line(y, width, height, px, py, nb_samples, size, max_iter);
                 tx.send((line, line_number)).await.unwrap();
             });
@@ -115,7 +112,8 @@ fn paint(r: f64, n: u32) -> (u8, u8, u8) {
 }
 
 fn mandelbrot_iter(px: f64, py: f64, max_iter: u32) -> (f64, u32) {
-    let (mut x, mut y, mut xx, mut yy, mut xy) = (0., 0., 0., 0., 0.);
+    let (mut x, mut y, mut xx, mut yy) = (0., 0., 0., 0.);
+    let mut xy;
 
     for i in 0..max_iter {
         xx = x * x;
