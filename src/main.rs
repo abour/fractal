@@ -61,17 +61,20 @@ fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
     let mut line: Vec<u8> = vec![0; line_size as usize];
 
     for x in 0..WIDTH {
-        let sampled_colours = (0..NB_SAMPLES).map(|_| {
-            let nx = SIZE * (((x as f64) + rng.gen_range(0., 1.0)) / (WIDTH as f64)) + px;
-            let ny =
-                SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
-            let (m_res, m_iter) = mandelbrot_iter(nx, ny);
-            paint(m_res, m_iter)
-        }).map(|(r, g, b)| (r as i32, g as i32, b as i32));
+        let sampled_colours = (0..NB_SAMPLES)
+            .map(|_| {
+                let nx = SIZE * (((x as f64) + rng.gen_range(0., 1.0)) / (WIDTH as f64)) + px;
+                let ny =
+                    SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
+                let (m_res, m_iter) = mandelbrot_iter(nx, ny);
+                paint(m_res, m_iter)
+            })
+            .map(|(r, g, b)| (r as i32, g as i32, b as i32));
 
-
-        let (r, g, b): (i32, i32, i32) = sampled_colours.fold((0, 0, 0), | (cr, cg, cb), (r, g, b)| (cr + r, cg + g, cb + b));
-
+        let (r, g, b): (i32, i32, i32) = sampled_colours
+            .fold((0, 0, 0), |(cr, cg, cb), (r, g, b)| {
+                (cr + r, cg + g, cb + b)
+            });
 
         line[(x * 3) as usize] = ((r as f64) / (NB_SAMPLES as f64)) as u8;
         line[((x * 3) + 1) as usize] = ((g as f64) / (NB_SAMPLES as f64)) as u8;
