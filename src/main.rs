@@ -67,10 +67,10 @@ fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
                 SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
             let (m_res, m_iter) = mandelbrot_iter(nx, ny);
             paint(m_res, m_iter)
-        });
+        }).map(|(r, g, b)| (r as i32, g as i32, b as i32));
 
 
-        let (r, g, b) = sampled_colours.fold((0, 0, 0), | (cr, cg, cb), (r, g, b)| (cr + r, cg + g, cb + b));
+        let (r, g, b): (i32, i32, i32) = sampled_colours.fold((0, 0, 0), | (cr, cg, cb), (r, g, b)| (cr + r, cg + g, cb + b));
 
 
         line[(x * 3) as usize] = ((r as f64) / (NB_SAMPLES as f64)) as u8;
