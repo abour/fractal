@@ -13,3 +13,7 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+# Output file
+
+fractal.png
