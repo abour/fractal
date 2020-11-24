@@ -2,7 +2,8 @@ mod color;
 
 use image;
 use rand::{thread_rng, Rng};
-use tokio::sync::mpsc;
+use std::sync::mpsc;
+use std::thread;
 
 const WIDTH: u32 = 1024;
 const HEIGHT: u32 = 1024;
@@ -11,39 +12,38 @@ const NB_SAMPLES: u32 = 50;
 const SIZE: f64 = 0.000000001;
 const MAX_ITER: u32 = 1000;
 
-#[tokio::main]
-async fn main() {
-    let blocking_task = tokio::spawn(async {
-        let px: f64 = -0.5557506;
-        let py: f64 = -0.55560;
-        let mut buf: Vec<u8> = Vec::with_capacity(BUF_SIZE as usize);
-        buf.resize(BUF_SIZE as usize, 0);
+fn main() {
+    let px: f64 = -0.5557506;
+    let py: f64 = -0.55560;
+    let mut buf: Vec<u8> = vec![0; BUF_SIZE as usize];
 
-        let (tx, mut rx) = mpsc::channel(100);
+    let (tx, rx) = mpsc::sync_channel(100);
 
-        for y in 0..HEIGHT {
-            let tx = tx.clone();
-            tokio::spawn(async move {
+    let chunk_size = HEIGHT / num_cpus::get() as u32;
+    for offset in (0..HEIGHT).step_by(chunk_size as usize) {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            // let (line, line_number) = render_line(y, px, py);
+            // tx.send((line, line_number)).await.unwrap();
+            for y in offset..offset + chunk_size {
                 let (line, line_number) = render_line(y, px, py);
-                tx.send((line, line_number)).await.unwrap();
-            });
-        }
+                tx.send((line, line_number)).unwrap();
+            }
+        });
+    }
 
-        drop(tx);
+    drop(tx);
 
-        let mut finished: f64 = 0.;
-        while let Some(res) = rx.recv().await {
-            finished += 1.;
-            let percentage_finished = (finished / (HEIGHT as f64)) * 100.;
-            print!("Progress: {}%\r", percentage_finished as u32);
+    let mut finished: f64 = 0.;
+     for res in rx.iter() {
+        finished += 1.;
+        let percentage_finished = (finished / (HEIGHT as f64)) * 100.;
+        print!("Progress: {}%\r", percentage_finished as u32);
 
-            let (line, line_number) = res;
-            write_line(&mut buf, &line, line_number);
-        }
-        image::save_buffer("fractal.png", &buf, WIDTH, HEIGHT, image::ColorType::Rgb8).unwrap();
-    });
-
-    blocking_task.await.unwrap();
+        let (line, line_number) = res;
+        write_line(&mut buf, &line, line_number);
+    }
+    image::save_buffer("fractal.png", &buf, WIDTH, HEIGHT, image::ColorType::Rgb8).unwrap();
 }
 
 fn write_line(buf: &mut Vec<u8>, line: &Vec<u8>, line_number: u32) {
