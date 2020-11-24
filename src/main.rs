@@ -1,8 +1,7 @@
 mod color;
 
-use image;
 use rand::{thread_rng, Rng};
-use tokio::sync::mpsc;
+use rayon::prelude::*;
 
 const WIDTH: u32 = 1024;
 const HEIGHT: u32 = 1024;
@@ -11,77 +10,37 @@ const NB_SAMPLES: u32 = 50;
 const SIZE: f64 = 0.000000001;
 const MAX_ITER: u32 = 1000;
 
-#[tokio::main]
-async fn main() {
-    let blocking_task = tokio::spawn(async {
-        let px: f64 = -0.5557506;
-        let py: f64 = -0.55560;
-        let mut buf: Vec<u8> = Vec::with_capacity(BUF_SIZE as usize);
-        buf.resize(BUF_SIZE as usize, 0);
+fn main() {
+    let px: f64 = -0.5557506;
+    let py: f64 = -0.55560;
+    let mut buf = vec![0; BUF_SIZE as usize];
 
-        let (tx, mut rx) = mpsc::channel(100);
-
-        for y in 0..HEIGHT {
-            let tx = tx.clone();
-            tokio::spawn(async move {
-                let (line, line_number) = render_line(y, px, py);
-                tx.send((line, line_number)).await.unwrap();
-            });
-        }
-
-        drop(tx);
-
-        let mut finished: f64 = 0.;
-        while let Some(res) = rx.recv().await {
-            finished += 1.;
-            let percentage_finished = (finished / (HEIGHT as f64)) * 100.;
-            print!("Progress: {}%\r", percentage_finished as u32);
-
-            let (line, line_number) = res;
-            write_line(&mut buf, &line, line_number);
-        }
-        image::save_buffer("fractal.png", &buf, WIDTH, HEIGHT, image::ColorType::Rgb8).unwrap();
-    });
-
-    blocking_task.await.unwrap();
+    buf.par_chunks_mut(3 * WIDTH as usize)
+       .enumerate()
+       .for_each(|(y, line)| render_line(line, y as u32, px, py));
+    image::save_buffer("fractal.png", &buf, WIDTH, HEIGHT, image::ColorType::Rgb8).unwrap();
 }
 
-fn write_line(buf: &mut Vec<u8>, line: &Vec<u8>, line_number: u32) {
-    for i in 0..WIDTH {
-        buf[(((line_number * WIDTH) + i) * 3) as usize] = line[(i * 3) as usize];
-        buf[((((line_number * WIDTH) + i) * 3) + 1) as usize] = line[((i * 3) + 1) as usize];
-        buf[((((line_number * WIDTH) + i) * 3) + 2) as usize] = line[((i * 3) + 2) as usize];
-    }
-}
-
-fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
+fn render_line(line: &mut [u8], y: u32, px: f64, py: f64) {
     let mut rng = thread_rng();
 
-    let line_size = WIDTH * 3;
-    let mut line: Vec<u8> = vec![0; line_size as usize];
-
     for x in 0..WIDTH {
-        let sampled_colours = (0..NB_SAMPLES)
+        let (r, g, b) = (0..NB_SAMPLES)
             .map(|_| {
                 let nx = SIZE * (((x as f64) + rng.gen_range(0., 1.0)) / (WIDTH as f64)) + px;
-                let ny =
-                    SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
+                let ny = SIZE * (((y as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
                 let (m_res, m_iter) = mandelbrot_iter(nx, ny);
                 paint(m_res, m_iter)
             })
-            .map(|(r, g, b)| (r as i32, g as i32, b as i32));
-
-        let (r, g, b): (i32, i32, i32) = sampled_colours
-            .fold((0, 0, 0), |(cr, cg, cb), (r, g, b)| {
+            .map(|(r, g, b)| (r as f64, g as f64, b as f64))
+            .fold((0., 0., 0.), |(cr, cg, cb), (r, g, b)| {
                 (cr + r, cg + g, cb + b)
             });
 
-        line[(x * 3) as usize] = ((r as f64) / (NB_SAMPLES as f64)) as u8;
-        line[((x * 3) + 1) as usize] = ((g as f64) / (NB_SAMPLES as f64)) as u8;
-        line[((x * 3) + 2) as usize] = ((b as f64) / (NB_SAMPLES as f64)) as u8;
+        line[(x * 3) as usize] = (r / (NB_SAMPLES as f64)) as u8;
+        line[((x * 3) + 1) as usize] = (g / (NB_SAMPLES as f64)) as u8;
+        line[((x * 3) + 2) as usize] = (b / (NB_SAMPLES as f64)) as u8;
     }
-
-    return (line, line_number);
 }
 
 fn paint(r: f64, n: u32) -> (u8, u8, u8) {
