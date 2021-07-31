@@ -7,9 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.3", features = ["full"] }
-image = "0.23.12"
-rand = "0.7.3"
+tokio = { version = "1.9.0", features = ["full"] }
+image = "0.23.14"
+rand = "0.8.4"
 
 [profile.release]
 opt-level = 3
