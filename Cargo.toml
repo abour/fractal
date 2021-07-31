@@ -10,3 +10,14 @@ edition = "2018"
 tokio = { version = "0.3", features = ["full"] }
 image = "0.23.12"
 rand = "0.7.3"
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
