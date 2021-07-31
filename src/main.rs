@@ -63,9 +63,9 @@ fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
     for x in 0..WIDTH {
         let sampled_colours = (0..NB_SAMPLES)
             .map(|_| {
-                let nx = SIZE * (((x as f64) + rng.gen_range(0., 1.0)) / (WIDTH as f64)) + px;
+                let nx = SIZE * (((x as f64) + rng.gen_range(0. .. 1.0)) / (WIDTH as f64)) + px;
                 let ny =
-                    SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
+                    SIZE * (((line_number as f64) + rng.gen_range(0. .. 1.0)) / (HEIGHT as f64)) + py;
                 let (m_res, m_iter) = mandelbrot_iter(nx, ny);
                 paint(m_res, m_iter)
             })
