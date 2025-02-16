@@ -1,11 +1,11 @@
 mod color;
 
 use image;
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use tokio::sync::mpsc;
 
-const WIDTH: u32 = 1024;
-const HEIGHT: u32 = 1024;
+const WIDTH: u32 = 3840;
+const HEIGHT: u32 = 2160;
 const BUF_SIZE: u32 = WIDTH * HEIGHT * 3;
 const NB_SAMPLES: u32 = 50;
 const SIZE: f64 = 0.000000001;
@@ -55,7 +55,7 @@ fn write_line(buf: &mut Vec<u8>, line: &Vec<u8>, line_number: u32) {
 }
 
 fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
     let line_size = WIDTH * 3;
     let mut line: Vec<u8> = vec![0; line_size as usize];
@@ -63,9 +63,9 @@ fn render_line(line_number: u32, px: f64, py: f64) -> (Vec<u8>, u32) {
     for x in 0..WIDTH {
         let sampled_colours = (0..NB_SAMPLES)
             .map(|_| {
-                let nx = SIZE * (((x as f64) + rng.gen_range(0., 1.0)) / (WIDTH as f64)) + px;
+                let nx = SIZE * (((x as f64) + rng.random_range(0. .. 1.0)) / (WIDTH as f64)) + px;
                 let ny =
-                    SIZE * (((line_number as f64) + rng.gen_range(0., 1.0)) / (HEIGHT as f64)) + py;
+                    SIZE * (((line_number as f64) + rng.random_range(0. .. 1.0)) / (HEIGHT as f64)) + py;
                 let (m_res, m_iter) = mandelbrot_iter(nx, ny);
                 paint(m_res, m_iter)
             })

@@ -2,11 +2,23 @@
 name = "fractal"
 version = "0.1.0"
 authors = ["alexandre <abour@localhost.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.3", features = ["full"] }
-image = "0.23.12"
-rand = "0.7.3"
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "sync", "macros"] }
+image = "0.25.5"
+rand = "0.9.0"
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+codegen-units = 1
+lto = "fat"
+panic = 'abort'
+incremental = false
+rpath = false
+strip = true
